@@ -9,17 +9,17 @@
 
 #define MAX_LINE	80
 #define MAX_ARGN	((MAX_LINE + 1) / 2)
-#define HISTORY	10
+#define MAX_HISTORY	10
 
-#define backward(head, n) (((head) + HISTORY - (n)) % HISTORY)
-#define forward(head, n) (((head) + (n)) % HISTORY)
+#define backward(head, n) (((head) + MAX_HISTORY - (n)) % MAX_HISTORY)
+#define forward(head, n) (((head) + (n)) % MAX_HISTORY)
 
-static char *history[HISTORY];
+static char *history[MAX_HISTORY];
 static size_t count, head;
 
 void add_history(const char *line)
 {
-	if (count < HISTORY)
+	if (count < MAX_HISTORY)
 		count++;
 	free(history[head]);
 	history[head] = strdup(line);
@@ -34,7 +34,7 @@ void print_history(void)
 
 void clear_history(void)
 {
-	for (size_t i = 0; i < HISTORY; i++) {
+	for (size_t i = 0; i < MAX_HISTORY; i++) {
 		free(history[i]);
 		history[i] = NULL;
 	}
