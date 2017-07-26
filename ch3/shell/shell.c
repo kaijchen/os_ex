@@ -11,6 +11,9 @@
 #define MAX_ARGN	((MAX_LINE + 1) / 2)
 #define HISTORY	10
 
+#define backward(head, n) (((head) + HISTORY - (n)) % HISTORY)
+#define forward(head, n) (((head) + (n)) % HISTORY)
+
 static char *history[HISTORY];
 static size_t count, head;
 
@@ -20,13 +23,13 @@ void add_history(const char *line)
 		count++;
 	free(history[head]);
 	history[head] = strdup(line);
-	head = (head + 1) % HISTORY;
+	head = forward(head, 1);
 }
 
 void print_history(void)
 {
 	for (size_t i = count; i; i--)
-		printf("%lu %s\n", i, history[(head + HISTORY - i) % HISTORY]);
+		printf("%lu %s\n", i, history[backward(head, i)]);
 }
 
 void clear_history(void)
@@ -49,14 +52,14 @@ int check_history(char *line)
 			fprintf(stderr, "No commands in history.\n");
 			return -1;
 		}
-		index = (head + HISTORY - 1) % HISTORY;
+		index = backward(head, 1);
 	} else if (isdigit(line[1])) {
 		sscanf(&line[1], "%lu", &id);
 		if (id == 0 || id > count) {
 			fprintf(stderr, "No such command in history\n");
 			return -1;
 		}
-		index = (head + HISTORY - id) % HISTORY;
+		index = backward(head, id);
 	} else {
 		fprintf(stderr, "Invalid syntax for history");
 		return -1;
