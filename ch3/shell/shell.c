@@ -11,8 +11,8 @@
 #define MAX_ARGN	((MAX_LINE + 1) / 2)
 #define MAX_HISTORY	10
 
-#define backward(head, n) (((head) + MAX_HISTORY - (n)) % MAX_HISTORY)
-#define forward(head, n) (((head) + (n)) % MAX_HISTORY)
+#define backward(head, n)	(((head) + MAX_HISTORY - (n)) % MAX_HISTORY)
+#define forward(head, n)	(((head) + (n)) % MAX_HISTORY)
 
 static char *history[MAX_HISTORY];
 static size_t count, head;
@@ -88,18 +88,49 @@ int check_background(int argn, char **args)
 
 int parse_line(char *str, char **args, int lim)
 {
-	char *token;
 	int n = 0;
+	int quote = 0;
+	int escape = 0;
+	char *p, *q;
 
-	while ((token = strsep(&str, "\t ")) != NULL) {
-		if (token[0] == '\0')
-			continue;
+	args[n++] = str;
 
-		args[n] = token;
+	for (p = q = str; *p; p++) {
+		if (quote) {
+			if (p[0] == '"') {
+				quote = 0;
+				continue;
+			}
 
-		if (++n == lim)
-			break;
+			if (p[0] == '\\' && (p[1] == '"' || p[1] == '\\'))
+				p++;
+			*q++ = *p;
+		} else if (escape) {
+			*q++ = *p;
+			escape = 0;
+		} else {
+			switch (p[0]) {
+			case '\\':
+				escape = 1;
+				break;
+			case '"':
+				quote = 1;
+				break;
+			case ' ':
+			case '\t':
+				if (q != str && q[-1] != '\0') {
+					*q++ = '\0';
+					args[n++] = q;
+				}
+				break;
+			default:
+				*q++ = *p;
+			}
+		}
 	}
+
+	*q = '\0';
+	args[n] = NULL;
 
 	return n;
 }
@@ -164,8 +195,6 @@ int main(void)
 		if ((argn = parse_line(line, args, MAX_ARGN)) == 0)
 			continue;
 
-		args[argn] = NULL;
-
 		bg = check_background(argn, args);
 
 		if (strcmp(args[0], "exit") == 0) {
@@ -179,7 +208,7 @@ int main(void)
 			}
 		} else {
 			if (bg)
-				printf("[bg run] %d\n", pid);
+				printf("[bg start] %d\n", pid);
 			else
 				waitpid(pid, &wstatus, WUNTRACED);
 		}
